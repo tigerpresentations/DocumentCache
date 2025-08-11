@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Training Hub</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #2563eb;
+        }
+        .error { border-left-color: #ef4444; }
+        .success { border-left-color: #10b981; }
+        .warning { border-left-color: #f59e0b; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Training Hub Debug Page</h1>
+    <p>This page helps diagnose deployment and caching issues.</p>
+
+    <div class="debug-section">
+        <h3>📅 Page Info</h3>
+        <pre id="pageInfo">Loading...</pre>
+    </div>
+
+    <div class="debug-section">
+        <h3>🌐 Service Worker Status</h3>
+        <pre id="swStatus">Loading...</pre>
+    </div>
+
+    <div class="debug-section">
+        <h3>💾 Cache Status</h3>
+        <pre id="cacheStatus">Loading...</pre>
+    </div>
+
+    <div class="debug-section">
+        <h3>🛠️ Actions</h3>
+        <button onclick="clearEverything()">Clear All Caches & Reload</button>
+        <button onclick="checkMainApp()">Test Main App</button>
+        <button onclick="location.reload()">Simple Reload</button>
+    </div>
+
+    <div class="debug-section">
+        <h3>📋 Debug Log</h3>
+        <pre id="debugLog"></pre>
+    </div>
+
+    <script>
+        const log = document.getElementById('debugLog');
+        
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            log.textContent += `[${timestamp}] ${message}\n`;
+            console.log(message);
+        }
+
+        async function loadPageInfo() {
+            const pageInfo = document.getElementById('pageInfo');
+            const info = {
+                'Current URL': window.location.href,
+                'User Agent': navigator.userAgent.substring(0, 100) + '...',
+                'Online Status': navigator.onLine ? 'Online' : 'Offline',
+                'Page Load Time': new Date().toISOString(),
+                'Referrer': document.referrer || 'Direct',
+                'GitHub Pages Expected': window.location.hostname.includes('github.io') ? 'Yes' : 'No'
+            };
+            
+            pageInfo.textContent = Object.entries(info)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('\n');
+        }
+
+        async function loadSWStatus() {
+            const swStatus = document.getElementById('swStatus');
+            
+            if (!('serviceWorker' in navigator)) {
+                swStatus.textContent = 'Service Worker not supported';
+                swStatus.parentElement.className += ' error';
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                
+                if (!registration) {
+                    swStatus.textContent = 'No service worker registered';
+                    swStatus.parentElement.className += ' warning';
+                    return;
+                }
+
+                const info = {
+                    'Registration Scope': registration.scope,
+                    'Active SW': registration.active ? registration.active.scriptURL : 'None',
+                    'Installing SW': registration.installing ? registration.installing.scriptURL : 'None',
+                    'Waiting SW': registration.waiting ? registration.waiting.scriptURL : 'None',
+                    'Update Found': registration.updatefound ? 'Yes' : 'No'
+                };
+
+                swStatus.textContent = Object.entries(info)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join('\n');
+                    
+                if (registration.active) {
+                    swStatus.parentElement.className += ' success';
+                } else {
+                    swStatus.parentElement.className += ' warning';
+                }
+
+            } catch (error) {
+                swStatus.textContent = `Error: ${error.message}`;
+                swStatus.parentElement.className += ' error';
+                addLog(`Service Worker error: ${error.message}`);
+            }
+        }
+
+        async function loadCacheStatus() {
+            const cacheStatus = document.getElementById('cacheStatus');
+            
+            try {
+                const cacheNames = await caches.keys();
+                
+                if (cacheNames.length === 0) {
+                    cacheStatus.textContent = 'No caches found';
+                    cacheStatus.parentElement.className += ' warning';
+                    return;
+                }
+
+                let info = `Found ${cacheNames.length} cache(s):\n\n`;
+                
+                for (const cacheName of cacheNames) {
+                    const cache = await caches.open(cacheName);
+                    const requests = await cache.keys();
+                    info += `${cacheName} (${requests.length} items):\n`;
+                    
+                    for (const request of requests.slice(0, 5)) { // Show first 5 items
+                        info += `  - ${request.url}\n`;
+                    }
+                    
+                    if (requests.length > 5) {
+                        info += `  ... and ${requests.length - 5} more\n`;
+                    }
+                    info += '\n';
+                }
+
+                cacheStatus.textContent = info;
+                cacheStatus.parentElement.className += ' success';
+
+            } catch (error) {
+                cacheStatus.textContent = `Error: ${error.message}`;
+                cacheStatus.parentElement.className += ' error';
+                addLog(`Cache error: ${error.message}`);
+            }
+        }
+
+        async function clearEverything() {
+            if (!confirm('This will clear all caches and service workers. Continue?')) {
+                return;
+            }
+
+            addLog('Starting complete cleanup...');
+            
+            try {
+                // Clear all caches
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+                addLog(`Deleted ${cacheNames.length} caches`);
+
+                // Unregister all service workers
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(registrations.map(reg => reg.unregister()));
+                addLog(`Unregistered ${registrations.length} service workers`);
+
+                addLog('Cleanup complete, reloading...');
+                setTimeout(() => window.location.reload(), 1000);
+
+            } catch (error) {
+                addLog(`Cleanup error: ${error.message}`);
+            }
+        }
+
+        function checkMainApp() {
+            addLog('Testing main app...');
+            window.location.href = './index.html';
+        }
+
+        // Initialize
+        addLog('Debug page loaded');
+        loadPageInfo();
+        loadSWStatus();
+        loadCacheStatus();
+    </script>
+</body>
+</html>
