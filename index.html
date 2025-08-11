@@ -268,6 +268,48 @@
             border-top: 1px solid var(--border);
         }
 
+        .resource-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 0.75rem;
+        }
+
+        .download-btn {
+            padding: 0.4rem 0.8rem;
+            background: var(--gradient);
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .download-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .download-btn.cached {
+            background: var(--success);
+        }
+
+        .download-btn.downloading {
+            background: var(--warning);
+            animation: pulse 1.5s infinite;
+        }
+
         .file-size {
             font-size: 0.85rem;
             color: var(--text-light);
@@ -520,6 +562,11 @@
                 });
 
                 document.addEventListener('click', (e) => {
+                    // Don't open resource if clicking on download button
+                    if (e.target.closest('.download-btn')) {
+                        return;
+                    }
+                    
                     if (e.target.closest('.resource-card')) {
                         const card = e.target.closest('.resource-card');
                         const resourceId = card.dataset.resourceId;
@@ -564,6 +611,11 @@
                             <span class="file-size">${doc.size}</span>
                             <span class="cache-status not-cached" id="status-${doc.id}">Not Cached</span>
                         </div>
+                        <div class="resource-actions">
+                            <button class="download-btn" id="download-${doc.id}" onclick="app.downloadSingleResource('${doc.id}')">
+                                📥 Download
+                            </button>
+                        </div>
                     </div>
                 `).join('');
             }
@@ -582,6 +634,11 @@
                         <div class="resource-meta">
                             <span class="file-size">${video.duration} • ${video.size}</span>
                             <span class="cache-status not-cached" id="status-${video.id}">Not Cached</span>
+                        </div>
+                        <div class="resource-actions">
+                            <button class="download-btn" id="download-${video.id}" onclick="app.downloadSingleResource('${video.id}')">
+                                📥 Download
+                            </button>
                         </div>
                     </div>
                 `).join('');
@@ -611,9 +668,74 @@
 
             updateResourceStatus(resourceId, isCached) {
                 const statusElement = document.getElementById(`status-${resourceId}`);
+                const downloadBtn = document.getElementById(`download-${resourceId}`);
+                
                 if (statusElement) {
                     statusElement.textContent = isCached ? 'Cached' : 'Not Cached';
                     statusElement.className = `cache-status ${isCached ? 'cached' : 'not-cached'}`;
+                }
+                
+                if (downloadBtn) {
+                    if (isCached) {
+                        downloadBtn.textContent = '✅ Cached';
+                        downloadBtn.className = 'download-btn cached';
+                        downloadBtn.disabled = false;
+                    } else {
+                        downloadBtn.textContent = '📥 Download';
+                        downloadBtn.className = 'download-btn';
+                        downloadBtn.disabled = false;
+                    }
+                }
+            }
+
+            async downloadSingleResource(resourceId) {
+                if (!this.isOnline) {
+                    this.showStatus('Cannot download content while offline.', 'error');
+                    return;
+                }
+
+                const allResources = [...resources.documents, ...resources.videos];
+                const resource = allResources.find(r => r.id === resourceId);
+                
+                if (!resource) {
+                    this.showStatus('Resource not found.', 'error');
+                    return;
+                }
+
+                const downloadBtn = document.getElementById(`download-${resourceId}`);
+                
+                if (this.cachedResources.has(resourceId)) {
+                    this.showStatus(`${resource.title} is already cached.`, 'info');
+                    return;
+                }
+
+                downloadBtn.textContent = '⏳ Downloading...';
+                downloadBtn.className = 'download-btn downloading';
+                downloadBtn.disabled = true;
+                
+                try {
+                    this.showStatus(`Downloading ${resource.title}...`, 'info');
+                    
+                    const response = await fetch(resource.url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const cache = await caches.open(CONTENT_CACHE);
+                    await cache.put(resource.url, response);
+                    
+                    this.cachedResources.add(resource.id);
+                    this.updateResourceStatus(resource.id, true);
+                    
+                    this.showStatus(`${resource.title} downloaded successfully!`, 'success');
+                    
+                } catch (error) {
+                    console.error(`Error downloading ${resource.title}:`, error);
+                    this.showStatus(`Failed to download ${resource.title}: ${error.message}`, 'error');
+                    
+                    downloadBtn.textContent = '📥 Download';
+                    downloadBtn.className = 'download-btn';
+                    downloadBtn.disabled = false;
                 }
             }
 
@@ -826,8 +948,9 @@
             }
         }
 
+        let app;
         document.addEventListener('DOMContentLoaded', () => {
-            new TrainingApp();
+            app = new TrainingApp();
         });
 
         window.addEventListener('click', (e) => {
