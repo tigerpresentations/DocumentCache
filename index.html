@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Offline Training Hub</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#ff6523">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -17,9 +17,9 @@
         }
 
         :root {
-            --primary-blue: #2563eb;
-            --secondary-blue: #667eea;
-            --gradient: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            --primary: #ff6523;
+            --secondary: #ff6523;
+            --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
             --text-dark: #1f2937;
             --text-light: #6b7280;
             --bg-light: #f9fafb;
@@ -179,7 +179,7 @@
 
         .search-input:focus {
             outline: none;
-            border-color: var(--primary-blue);
+            border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
@@ -215,7 +215,7 @@
         }
 
         .resource-card:hover {
-            border-color: var(--primary-blue);
+            border-color: var(--primary);
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
             transform: translateY(-2px);
         }
@@ -245,7 +245,7 @@
 
         .video-icon {
             background: rgba(37, 99, 235, 0.1);
-            color: var(--primary-blue);
+            color: var(--primary);
         }
 
         .resource-info h3 {
@@ -494,7 +494,7 @@
 <body>
     <header class="header">
         <div class="header-content">
-            <h1 class="app-title">📚 Offline Training Hub</h1>
+            <h1 class="app-title">📚 Tiger Document Library</h1>
             <div class="status-indicator">
                 <div class="status-dot" id="connectionStatus"></div>
                 <span id="connectionText">Online</span>
@@ -776,7 +776,7 @@
                 
                 if (downloadBtn) {
                     if (isCached) {
-                        downloadBtn.textContent = '✅ Cached';
+                        downloadBtn.textContent = '✅ Downloaded';
                         downloadBtn.className = 'action-btn download-btn cached';
                         downloadBtn.disabled = false;
                     } else {
