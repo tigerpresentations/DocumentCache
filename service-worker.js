@@ -62,21 +62,38 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip non-same-origin requests
+  if (requestUrl.origin !== location.origin) {
+    return;
+  }
+
   // Handle content files (documents and videos)
   if (requestUrl.pathname.includes('/documents/') || requestUrl.pathname.includes('/videos/')) {
     event.respondWith(handleContentRequest(event.request));
   }
-  // Handle static assets
+  // Handle manifest.json specifically
+  else if (requestUrl.pathname.endsWith('/manifest.json')) {
+    event.respondWith(handleStaticAssetRequest(event.request));
+  }
+  // Handle service worker file (don't cache this)
+  else if (requestUrl.pathname.endsWith('/service-worker.js')) {
+    return; // Let browser handle normally
+  }
+  // Handle specific static assets
   else if (STATIC_ASSETS.some(asset => {
     const assetPath = new URL(asset, location.origin).pathname;
-    return requestUrl.pathname === assetPath || requestUrl.pathname === assetPath.substring(1);
+    return requestUrl.pathname === assetPath;
   })) {
     event.respondWith(handleStaticAssetRequest(event.request));
   }
-  // Handle app requests (same origin)
-  else if (requestUrl.origin === location.origin) {
+  // Handle HTML pages and app navigation
+  else if (requestUrl.pathname.endsWith('.html') || 
+           requestUrl.pathname === BASE_PATH + '/' ||
+           requestUrl.pathname === '/' ||
+           (!requestUrl.pathname.includes('.') && requestUrl.pathname.length > 1)) {
     event.respondWith(handleAppRequest(event.request));
   }
+  // Let other requests pass through normally
 });
 
 async function handleContentRequest(request) {
@@ -170,7 +187,9 @@ async function handleAppRequest(request) {
   const cache = await caches.open(CACHE_NAME);
   
   try {
-    // Try to match cached responses with base path support
+    console.log('[ServiceWorker] Handling app request:', request.url);
+    
+    // Always try to serve index.html for app requests
     let cachedResponse = await cache.match(BASE_PATH + '/index.html');
     
     if (!cachedResponse) {
@@ -183,31 +202,36 @@ async function handleAppRequest(request) {
     }
     
     if (cachedResponse) {
-      console.log('[ServiceWorker] Serving app from cache');
+      console.log('[ServiceWorker] Serving index.html from cache for:', request.url);
       
-      // Background update
-      fetch(request).then(networkResponse => {
-        if (networkResponse.ok) {
-          cache.put(BASE_PATH + '/index.html', networkResponse.clone());
-          cache.put(BASE_PATH + '/', networkResponse.clone());
-        }
-      }).catch(() => {
-        console.log('[ServiceWorker] Background update failed, continuing with cached version');
-      });
+      // Background update of the actual requested URL if it's the main page
+      const requestUrl = new URL(request.url);
+      if (requestUrl.pathname === BASE_PATH + '/' || requestUrl.pathname === '/' || requestUrl.pathname.endsWith('.html')) {
+        fetch('/index.html').then(networkResponse => {
+          if (networkResponse.ok) {
+            cache.put(BASE_PATH + '/index.html', networkResponse.clone());
+            cache.put(BASE_PATH + '/', networkResponse.clone());
+          }
+        }).catch(() => {
+          console.log('[ServiceWorker] Background update failed, continuing with cached version');
+        });
+      }
       
       return cachedResponse;
     }
     
-    console.log('[ServiceWorker] App not in cache, fetching from network');
-    const networkResponse = await fetch(request);
+    console.log('[ServiceWorker] App not in cache, fetching index.html from network');
+    // Always fetch index.html for app navigation
+    const networkResponse = await fetch('/index.html');
     
     if (networkResponse.ok) {
       const responseClone = networkResponse.clone();
       await cache.put(BASE_PATH + '/index.html', responseClone);
       await cache.put(BASE_PATH + '/', responseClone.clone());
+      return networkResponse;
     }
     
-    return networkResponse;
+    throw new Error('Failed to fetch index.html');
     
   } catch (error) {
     console.error('[ServiceWorker] App request failed:', error);
