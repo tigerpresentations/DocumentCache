@@ -270,15 +270,14 @@
 
         .resource-actions {
             display: flex;
-            gap: 0.5rem;
+            justify-content: space-between;
             align-items: center;
             margin-top: 0.75rem;
+            gap: 0.5rem;
         }
 
-        .download-btn {
+        .action-btn {
             padding: 0.4rem 0.8rem;
-            background: var(--gradient);
-            color: white;
             border: none;
             border-radius: 0.375rem;
             font-size: 0.8rem;
@@ -290,15 +289,32 @@
             gap: 0.25rem;
         }
 
-        .download-btn:hover {
+        .action-btn:hover {
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
         }
 
-        .download-btn:disabled {
+        .action-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .view-btn {
+            background: var(--gradient);
+            color: white;
+        }
+
+        .view-btn:hover {
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+        }
+
+        .download-btn {
+            background: var(--gradient);
+            color: white;
+        }
+
+        .download-btn:hover {
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
         }
 
         .download-btn.cached {
@@ -479,8 +495,8 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'training-hub-v4';
-        const CONTENT_CACHE = 'content-cache-v4';
+        const CACHE_NAME = 'training-hub-v7';
+        const CONTENT_CACHE = 'content-cache-v7';
         
         const resources = {
             documents: [
@@ -578,15 +594,16 @@
                 });
 
                 document.addEventListener('click', (e) => {
-                    // Don't open resource if clicking on download button
-                    if (e.target.closest('.download-btn')) {
+                    // Don't open resource if clicking on any action button
+                    if (e.target.closest('.action-btn') || e.target.closest('.download-btn') || e.target.closest('.view-btn')) {
                         return;
                     }
                     
-                    if (e.target.closest('.resource-card')) {
+                    // Only trigger on card header clicks, not the entire card
+                    if (e.target.closest('.resource-header')) {
                         const card = e.target.closest('.resource-card');
                         const resourceId = card.dataset.resourceId;
-                        this.openResource(resourceId);
+                        this.viewResource(resourceId);
                     }
                 });
             }
