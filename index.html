@@ -479,8 +479,8 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'training-hub-v3';
-        const CONTENT_CACHE = 'content-cache-v3';
+        const CACHE_NAME = 'training-hub-v4';
+        const CONTENT_CACHE = 'content-cache-v4';
         
         const resources = {
             documents: [
@@ -628,7 +628,10 @@
                             <span class="cache-status not-cached" id="status-${doc.id}">Not Cached</span>
                         </div>
                         <div class="resource-actions">
-                            <button class="download-btn" id="download-${doc.id}" onclick="app.downloadSingleResource('${doc.id}')">
+                            <button class="action-btn view-btn" id="view-${doc.id}" onclick="app.viewResource('${doc.id}')">
+                                📝 View Document
+                            </button>
+                            <button class="action-btn download-btn" id="download-${doc.id}" onclick="app.downloadSingleResource('${doc.id}')">
                                 📥 Download
                             </button>
                         </div>
@@ -652,7 +655,10 @@
                             <span class="cache-status not-cached" id="status-${video.id}">Not Cached</span>
                         </div>
                         <div class="resource-actions">
-                            <button class="download-btn" id="download-${video.id}" onclick="app.downloadSingleResource('${video.id}')">
+                            <button class="action-btn view-btn" id="view-${video.id}" onclick="app.viewResource('${video.id}')">
+                                🎥 Play Video
+                            </button>
+                            <button class="action-btn download-btn" id="download-${video.id}" onclick="app.downloadSingleResource('${video.id}')">
                                 📥 Download
                             </button>
                         </div>
@@ -702,6 +708,58 @@
                         downloadBtn.disabled = false;
                     }
                 }
+            }
+
+            async viewResource(resourceId) {
+                const allResources = [...resources.documents, ...resources.videos];
+                const resource = allResources.find(r => r.id === resourceId);
+                
+                if (!resource) {
+                    this.showErrorToast('Resource not found.');
+                    return;
+                }
+                
+                const isVideo = resources.videos.some(v => v.id === resourceId);
+                
+                try {
+                    // Try cached version first
+                    if (this.cachedResources.has(resourceId)) {
+                        const cache = await caches.open(CONTENT_CACHE);
+                        const cachedResponse = await cache.match(resource.url);
+                        
+                        if (cachedResponse) {
+                            const blob = await cachedResponse.blob();
+                            const url = URL.createObjectURL(blob);
+                            
+                            if (isVideo) {
+                                this.openVideoModal(url, resource.title);
+                            } else {
+                                window.open(url, '_blank');
+                            }
+                            return;
+                        }
+                    }
+                    
+                    // Fall back to network if online
+                    if (this.isOnline) {
+                        if (isVideo) {
+                            this.openVideoModal(resource.url, resource.title);
+                        } else {
+                            window.open(resource.url, '_blank');
+                        }
+                    } else {
+                        this.showErrorToast(`"${resource.title}" is not cached and you are offline. Download it first to view offline.`);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error viewing resource:', error);
+                    this.showErrorToast(`Error opening "${resource.title}": ${error.message}`);
+                }
+            }
+
+            // Keep the old method for backward compatibility
+            async openResource(resourceId) {
+                return this.viewResource(resourceId);
             }
 
             async downloadSingleResource(resourceId) {
@@ -978,6 +1036,43 @@
                 };
                 
                 statusElement.style.borderLeft = `4px solid ${colors[type] || colors.info}`;
+                
+                // Also show error toasts for error messages
+                if (type === 'error') {
+                    this.showErrorToast(message);
+                }
+            }
+
+            showErrorToast(message) {
+                // Remove existing error toast if any
+                const existingToast = document.getElementById('errorToast');
+                if (existingToast) {
+                    existingToast.remove();
+                }
+                
+                // Create error toast
+                const toast = document.createElement('div');
+                toast.id = 'errorToast';
+                toast.className = 'error-toast';
+                toast.innerHTML = `
+                    ${message}
+                    <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+                `;
+                
+                document.body.appendChild(toast);
+                
+                // Show toast with animation
+                setTimeout(() => {
+                    toast.classList.add('show');
+                }, 100);
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    if (toast.classList.contains('show')) {
+                        toast.classList.remove('show');
+                        setTimeout(() => toast.remove(), 300);
+                    }
+                }, 5000);
             }
 
             async registerServiceWorker() {
