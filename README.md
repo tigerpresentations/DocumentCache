@@ -19,7 +19,7 @@ A Progressive Web App (PWA) designed for offline access to training documents an
 
 ## 🚀 Live Demo
 
-Visit the live demo: [https://YOUR_USERNAME.github.io/training-hub-pwa](https://YOUR_USERNAME.github.io/training-hub-pwa)
+Visit the live demo: [https://tigerpresentations.github.io/training-hub-pwa](https://tigerpresentations.github.io/training-hub-pwa)
 
 ## 📱 Installation
 
