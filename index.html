@@ -495,8 +495,8 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'training-hub-v7';
-        const CONTENT_CACHE = 'content-cache-v7';
+        const CACHE_NAME = 'training-hub-v8';
+        const CONTENT_CACHE = 'content-cache-v8';
         
         const resources = {
             documents: [
@@ -717,11 +717,11 @@
                 if (downloadBtn) {
                     if (isCached) {
                         downloadBtn.textContent = '✅ Cached';
-                        downloadBtn.className = 'download-btn cached';
+                        downloadBtn.className = 'action-btn download-btn cached';
                         downloadBtn.disabled = false;
                     } else {
                         downloadBtn.textContent = '📥 Download';
-                        downloadBtn.className = 'download-btn';
+                        downloadBtn.className = 'action-btn download-btn';
                         downloadBtn.disabled = false;
                     }
                 }
@@ -739,6 +739,12 @@
                 const isVideo = resources.videos.some(v => v.id === resourceId);
                 
                 try {
+                    // Pre-open window immediately on user interaction to avoid popup blocking
+                    let newWindow = null;
+                    if (!isVideo) {
+                        newWindow = window.open('', '_blank');
+                    }
+                    
                     // Try cached version first
                     if (this.cachedResources.has(resourceId)) {
                         const cache = await caches.open(CONTENT_CACHE);
@@ -751,7 +757,7 @@
                             if (isVideo) {
                                 this.openVideoModal(url, resource.title);
                             } else {
-                                window.open(url, '_blank');
+                                newWindow.location.href = url;
                             }
                             return;
                         }
@@ -762,9 +768,10 @@
                         if (isVideo) {
                             this.openVideoModal(resource.url, resource.title);
                         } else {
-                            window.open(resource.url, '_blank');
+                            newWindow.location.href = resource.url;
                         }
                     } else {
+                        if (newWindow) newWindow.close(); // Close the pre-opened window
                         this.showErrorToast(`"${resource.title}" is not cached and you are offline. Download it first to view offline.`);
                     }
                     
@@ -801,7 +808,7 @@
                 }
 
                 downloadBtn.textContent = '⏳ Downloading...';
-                downloadBtn.className = 'download-btn downloading';
+                downloadBtn.className = 'action-btn download-btn downloading';
                 downloadBtn.disabled = true;
                 
                 try {
@@ -825,7 +832,7 @@
                     this.showStatus(`Failed to download ${resource.title}: ${error.message}`, 'error');
                     
                     downloadBtn.textContent = '📥 Download';
-                    downloadBtn.className = 'download-btn';
+                    downloadBtn.className = 'action-btn download-btn';
                     downloadBtn.disabled = false;
                 }
             }
