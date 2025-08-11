@@ -1,5 +1,5 @@
-const CACHE_NAME = 'training-hub-v1';
-const CONTENT_CACHE = 'content-cache-v1';
+const CACHE_NAME = 'training-hub-v2';
+const CONTENT_CACHE = 'content-cache-v2';
 
 // Auto-detect base path for GitHub Pages subdirectory support
 const BASE_PATH = location.pathname.replace('/index.html', '').replace(/\/$/, '') || '';
@@ -13,18 +13,19 @@ const STATIC_ASSETS = [
 ].filter(asset => asset !== BASE_PATH + '//');
 
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing');
+  console.log('[ServiceWorker] Installing new version v2');
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[ServiceWorker] Pre-caching static assets');
         return cache.addAll(STATIC_ASSETS.filter(url => {
-          return !url.includes('/icons/') || url === '/icons/icon-192x192.png' || url === '/icons/icon-512x512.png';
+          return !url.includes('/icons/') || url.includes('icon-192x192.png') || url.includes('icon-512x512.png');
         }));
       })
       .then(() => {
         console.log('[ServiceWorker] Static assets cached successfully');
+        // Force immediate activation of new service worker
         return self.skipWaiting();
       })
       .catch((error) => {
