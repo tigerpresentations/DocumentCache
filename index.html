@@ -429,6 +429,66 @@
             opacity: 0.6;
             pointer-events: none;
         }
+
+        /* Error Toast Styles */
+        .error-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--error);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+            z-index: 10000;
+            max-width: 400px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .error-toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            flex-shrink: 0;
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        /* Make sure error toasts appear above everything */
+        @media (max-width: 768px) {
+            .error-toast {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                transform: translateY(-100%);
+            }
+
+            .error-toast.show {
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -495,8 +555,8 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'training-hub-v8';
-        const CONTENT_CACHE = 'content-cache-v8';
+        const CACHE_NAME = 'training-hub-v9';
+        const CONTENT_CACHE = 'content-cache-v9';
         
         const resources = {
             documents: [
