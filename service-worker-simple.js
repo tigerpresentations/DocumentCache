@@ -1,5 +1,5 @@
-const CACHE_NAME = 'training-hub-v11';
-const CONTENT_CACHE = 'content-cache-v11';
+const CACHE_NAME = 'training-hub-v12';
+const CONTENT_CACHE = 'content-cache-v12';
 
 // Auto-detect base path for GitHub Pages subdirectory support
 const BASE_PATH = location.pathname.replace('/service-worker.js', '').replace('/service-worker-simple.js', '').replace(/\/$/, '') || '';
@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v11 - fixed download button text rendering');
+  console.log('[ServiceWorker] Installing v12 - added install prompt with instructions');
   self.skipWaiting(); // Force immediate activation
 });
 
