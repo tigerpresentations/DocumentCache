@@ -1,0 +1,113 @@
+{
+  "name": "Offline Training Hub",
+  "short_name": "Training Hub",
+  "description": "Access training documents and videos offline with comprehensive caching capabilities",
+  "start_url": "./",
+  "display": "standalone",
+  "theme_color": "#2563eb",
+  "background_color": "#f9fafb",
+  "orientation": "portrait-primary",
+  "scope": "./",
+  "lang": "en-US",
+  "categories": ["education", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/desktop-home.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Training Hub desktop interface showing document and video collections"
+    },
+    {
+      "src": "screenshots/mobile-home.png",
+      "sizes": "375x812",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Training Hub mobile interface with offline capabilities"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Download All Content",
+      "short_name": "Download",
+      "description": "Quickly cache all training materials for offline access",
+      "url": "/?action=download",
+      "icons": [
+        {
+          "src": "icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Training Documents",
+      "short_name": "Documents",
+      "description": "Access cached PDF training documents",
+      "url": "/?section=documents",
+      "icons": [
+        {
+          "src": "icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

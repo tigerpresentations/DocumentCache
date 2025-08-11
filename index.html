@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Training Hub</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #2563eb;
+            --secondary-blue: #667eea;
+            --gradient: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --bg-light: #f9fafb;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: var(--gradient);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .app-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.offline {
+            background: var(--error);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .offline-banner {
+            background: var(--error);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            display: none;
+        }
+
+        .offline-banner.show {
+            display: block;
+        }
+
+        .controls-section {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .control-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: var(--text-dark);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #f3f4f6;
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .search-section {
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .resource-card {
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+            background: white;
+        }
+
+        .resource-card:hover {
+            border-color: var(--primary-blue);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .resource-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .resource-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .pdf-icon {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+
+        .video-icon {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .resource-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .resource-info p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .resource-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .file-size {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .cache-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .cached {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .not-cached {
+            background: rgba(107, 114, 128, 0.1);
+            color: var(--text-light);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient);
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 0.75rem;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .status-text {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background: var(--bg-light);
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .resources-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1 class="app-title">📚 Offline Training Hub</h1>
+            <div class="status-indicator">
+                <div class="status-dot" id="connectionStatus"></div>
+                <span id="connectionText">Online</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="offline-banner" id="offlineBanner">
+            ⚠️ You're currently offline. You can only access previously cached content.
+        </div>
+
+        <section class="controls-section">
+            <div class="controls-grid">
+                <button class="control-button btn-primary" id="downloadAllBtn">
+                    📥 Download All Content
+                </button>
+                <button class="control-button btn-secondary" id="checkStatusBtn">
+                    📊 Check Cache Status
+                </button>
+                <button class="control-button btn-danger" id="clearCacheBtn">
+                    🗑️ Clear Cache
+                </button>
+            </div>
+            <div class="progress-bar" id="downloadProgress" style="display: none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="status-text" id="statusText"></div>
+        </section>
+
+        <section class="search-section">
+            <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search documents and videos...">
+        </section>
+
+        <section class="content-section">
+            <h2 class="section-title">📄 Training Documents</h2>
+            <div class="resources-grid" id="documentsGrid">
+            </div>
+        </section>
+
+        <section class="content-section">
+            <h2 class="section-title">🎥 Training Videos</h2>
+            <div class="resources-grid" id="videosGrid">
+            </div>
+        </section>
+    </div>
+
+    <div class="modal" id="videoModal">
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">&times;</button>
+            <video id="modalVideo" controls style="width: 100%; max-width: 800px;">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <script>
+        const CACHE_NAME = 'training-hub-v1';
+        const CONTENT_CACHE = 'content-cache-v1';
+        
+        const resources = {
+            documents: [
+                {
+                    id: 'doc1',
+                    title: 'Quick Start Guide',
+                    description: 'Essential setup instructions and basic configuration steps to get started quickly.',
+                    filename: 'product-guide-1.pdf',
+                    size: '3.2 MB',
+                    url: 'documents/product-guide-1.pdf'
+                },
+                {
+                    id: 'doc2',
+                    title: 'Advanced Features Manual',
+                    description: 'Comprehensive guide covering advanced functionality and expert-level configurations.',
+                    filename: 'product-guide-2.pdf',
+                    size: '3.5 MB',
+                    url: 'documents/product-guide-2.pdf'
+                }
+            ],
+            videos: [
+                {
+                    id: 'vid1',
+                    title: 'Initial Setup Tutorial',
+                    description: 'Step-by-step walkthrough of the complete installation and initial configuration process.',
+                    filename: 'setup-tutorial.mp4',
+                    duration: '3:45',
+                    size: '25 MB',
+                    url: 'videos/setup-tutorial.mp4'
+                },
+                {
+                    id: 'vid2',
+                    title: 'Common Issues & Solutions',
+                    description: 'Troubleshooting guide for the most frequently encountered problems and their solutions.',
+                    filename: 'troubleshooting.mp4',
+                    duration: '2:30',
+                    size: '18 MB',
+                    url: 'videos/troubleshooting.mp4'
+                },
+                {
+                    id: 'vid3',
+                    title: 'Maintenance & Care',
+                    description: 'Best practices for ongoing maintenance, updates, and system care procedures.',
+                    filename: 'maintenance.mp4',
+                    duration: '2:15',
+                    size: '16 MB',
+                    url: 'videos/maintenance.mp4'
+                }
+            ]
+        };
+
+        class TrainingApp {
+            constructor() {
+                this.cachedResources = new Set();
+                this.isOnline = navigator.onLine;
+                this.init();
+            }
+
+            async init() {
+                this.bindEvents();
+                this.updateConnectionStatus();
+                this.renderResources();
+                await this.checkCacheStatus();
+                this.registerServiceWorker();
+            }
+
+            bindEvents() {
+                document.getElementById('downloadAllBtn').addEventListener('click', () => this.downloadAllContent());
+                document.getElementById('checkStatusBtn').addEventListener('click', () => this.displayCacheStatus());
+                document.getElementById('clearCacheBtn').addEventListener('click', () => this.clearCache());
+                document.getElementById('searchInput').addEventListener('input', (e) => this.filterResources(e.target.value));
+                document.getElementById('modalClose').addEventListener('click', () => this.closeVideoModal());
+                
+                window.addEventListener('online', () => {
+                    this.isOnline = true;
+                    this.updateConnectionStatus();
+                });
+                
+                window.addEventListener('offline', () => {
+                    this.isOnline = false;
+                    this.updateConnectionStatus();
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('.resource-card')) {
+                        const card = e.target.closest('.resource-card');
+                        const resourceId = card.dataset.resourceId;
+                        this.openResource(resourceId);
+                    }
+                });
+            }
+
+            updateConnectionStatus() {
+                const statusDot = document.getElementById('connectionStatus');
+                const statusText = document.getElementById('connectionText');
+                const offlineBanner = document.getElementById('offlineBanner');
+
+                if (this.isOnline) {
+                    statusDot.classList.remove('offline');
+                    statusText.textContent = 'Online';
+                    offlineBanner.classList.remove('show');
+                } else {
+                    statusDot.classList.add('offline');
+                    statusText.textContent = 'Offline';
+                    offlineBanner.classList.add('show');
+                }
+            }
+
+            renderResources() {
+                this.renderDocuments();
+                this.renderVideos();
+            }
+
+            renderDocuments() {
+                const grid = document.getElementById('documentsGrid');
+                grid.innerHTML = resources.documents.map(doc => `
+                    <div class="resource-card" data-resource-id="${doc.id}" data-type="document">
+                        <div class="resource-header">
+                            <div class="resource-icon pdf-icon">📄</div>
+                            <div class="resource-info">
+                                <h3>${doc.title}</h3>
+                                <p>${doc.description}</p>
+                            </div>
+                        </div>
+                        <div class="resource-meta">
+                            <span class="file-size">${doc.size}</span>
+                            <span class="cache-status not-cached" id="status-${doc.id}">Not Cached</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderVideos() {
+                const grid = document.getElementById('videosGrid');
+                grid.innerHTML = resources.videos.map(video => `
+                    <div class="resource-card" data-resource-id="${video.id}" data-type="video">
+                        <div class="resource-header">
+                            <div class="resource-icon video-icon">🎥</div>
+                            <div class="resource-info">
+                                <h3>${video.title}</h3>
+                                <p>${video.description}</p>
+                            </div>
+                        </div>
+                        <div class="resource-meta">
+                            <span class="file-size">${video.duration} • ${video.size}</span>
+                            <span class="cache-status not-cached" id="status-${video.id}">Not Cached</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            async checkCacheStatus() {
+                try {
+                    const cache = await caches.open(CONTENT_CACHE);
+                    const cachedRequests = await cache.keys();
+                    
+                    this.cachedResources.clear();
+                    
+                    for (const request of cachedRequests) {
+                        const url = request.url;
+                        const allResources = [...resources.documents, ...resources.videos];
+                        const resource = allResources.find(r => url.includes(r.filename));
+                        
+                        if (resource) {
+                            this.cachedResources.add(resource.id);
+                            this.updateResourceStatus(resource.id, true);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking cache status:', error);
+                }
+            }
+
+            updateResourceStatus(resourceId, isCached) {
+                const statusElement = document.getElementById(`status-${resourceId}`);
+                if (statusElement) {
+                    statusElement.textContent = isCached ? 'Cached' : 'Not Cached';
+                    statusElement.className = `cache-status ${isCached ? 'cached' : 'not-cached'}`;
+                }
+            }
+
+            async downloadAllContent() {
+                if (!this.isOnline) {
+                    this.showStatus('Cannot download content while offline.', 'error');
+                    return;
+                }
+
+                const downloadBtn = document.getElementById('downloadAllBtn');
+                const progressBar = document.getElementById('downloadProgress');
+                const progressFill = document.getElementById('progressFill');
+                
+                downloadBtn.classList.add('loading');
+                progressBar.style.display = 'block';
+                
+                try {
+                    const allResources = [...resources.documents, ...resources.videos];
+                    let downloadedCount = 0;
+                    
+                    this.showStatus('Starting download...', 'info');
+                    
+                    for (const resource of allResources) {
+                        try {
+                            const response = await fetch(resource.url);
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            
+                            const cache = await caches.open(CONTENT_CACHE);
+                            await cache.put(resource.url, response);
+                            
+                            this.cachedResources.add(resource.id);
+                            this.updateResourceStatus(resource.id, true);
+                            
+                            downloadedCount++;
+                            const progress = (downloadedCount / allResources.length) * 100;
+                            progressFill.style.width = `${progress}%`;
+                            
+                            this.showStatus(`Downloaded ${resource.title} (${downloadedCount}/${allResources.length})`, 'info');
+                            
+                        } catch (error) {
+                            console.error(`Error downloading ${resource.title}:`, error);
+                            this.showStatus(`Failed to download ${resource.title}`, 'error');
+                        }
+                    }
+                    
+                    this.showStatus(`Successfully cached ${downloadedCount} out of ${allResources.length} resources!`, 'success');
+                    
+                } catch (error) {
+                    console.error('Download error:', error);
+                    this.showStatus('Download failed. Please try again.', 'error');
+                } finally {
+                    downloadBtn.classList.remove('loading');
+                    setTimeout(() => {
+                        progressBar.style.display = 'none';
+                        progressFill.style.width = '0%';
+                    }, 2000);
+                }
+            }
+
+            async displayCacheStatus() {
+                try {
+                    const cache = await caches.open(CONTENT_CACHE);
+                    const cachedRequests = await cache.keys();
+                    
+                    let totalSize = 0;
+                    const allResources = [...resources.documents, ...resources.videos];
+                    const cachedResourceNames = [];
+                    
+                    for (const request of cachedRequests) {
+                        const response = await cache.match(request);
+                        if (response) {
+                            const resource = allResources.find(r => request.url.includes(r.filename));
+                            if (resource) {
+                                cachedResourceNames.push(resource.title);
+                            }
+                        }
+                    }
+                    
+                    const statusMessage = cachedResourceNames.length > 0 
+                        ? `Cached Resources (${cachedResourceNames.length}/${allResources.length}):\n• ${cachedResourceNames.join('\n• ')}`
+                        : 'No content has been cached yet. Click "Download All Content" to cache resources for offline access.';
+                    
+                    this.showStatus(statusMessage, cachedResourceNames.length > 0 ? 'success' : 'info');
+                    
+                } catch (error) {
+                    console.error('Error checking cache status:', error);
+                    this.showStatus('Error checking cache status.', 'error');
+                }
+            }
+
+            async clearCache() {
+                if (confirm('This will remove all cached content. Are you sure?')) {
+                    try {
+                        await caches.delete(CONTENT_CACHE);
+                        this.cachedResources.clear();
+                        
+                        const allResources = [...resources.documents, ...resources.videos];
+                        allResources.forEach(resource => {
+                            this.updateResourceStatus(resource.id, false);
+                        });
+                        
+                        this.showStatus('Cache cleared successfully.', 'success');
+                        
+                    } catch (error) {
+                        console.error('Error clearing cache:', error);
+                        this.showStatus('Error clearing cache.', 'error');
+                    }
+                }
+            }
+
+            filterResources(query) {
+                const cards = document.querySelectorAll('.resource-card');
+                const searchTerm = query.toLowerCase().trim();
+                
+                cards.forEach(card => {
+                    const title = card.querySelector('h3').textContent.toLowerCase();
+                    const description = card.querySelector('p').textContent.toLowerCase();
+                    const matches = title.includes(searchTerm) || description.includes(searchTerm);
+                    
+                    card.style.display = matches || searchTerm === '' ? 'block' : 'none';
+                });
+            }
+
+            async openResource(resourceId) {
+                const allResources = [...resources.documents, ...resources.videos];
+                const resource = allResources.find(r => r.id === resourceId);
+                
+                if (!resource) return;
+                
+                const isVideo = resources.videos.some(v => v.id === resourceId);
+                
+                try {
+                    if (this.cachedResources.has(resourceId)) {
+                        const cache = await caches.open(CONTENT_CACHE);
+                        const cachedResponse = await cache.match(resource.url);
+                        
+                        if (cachedResponse) {
+                            const blob = await cachedResponse.blob();
+                            const url = URL.createObjectURL(blob);
+                            
+                            if (isVideo) {
+                                this.openVideoModal(url, resource.title);
+                            } else {
+                                window.open(url, '_blank');
+                            }
+                            return;
+                        }
+                    }
+                    
+                    if (this.isOnline) {
+                        if (isVideo) {
+                            this.openVideoModal(resource.url, resource.title);
+                        } else {
+                            window.open(resource.url, '_blank');
+                        }
+                    } else {
+                        this.showStatus('This content is not cached and you are offline.', 'error');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error opening resource:', error);
+                    this.showStatus('Error opening resource.', 'error');
+                }
+            }
+
+            openVideoModal(videoUrl, title) {
+                const modal = document.getElementById('videoModal');
+                const video = document.getElementById('modalVideo');
+                
+                video.src = videoUrl;
+                video.title = title;
+                modal.style.display = 'block';
+            }
+
+            closeVideoModal() {
+                const modal = document.getElementById('videoModal');
+                const video = document.getElementById('modalVideo');
+                
+                video.pause();
+                video.src = '';
+                modal.style.display = 'none';
+            }
+
+            showStatus(message, type = 'info') {
+                const statusElement = document.getElementById('statusText');
+                statusElement.textContent = message;
+                statusElement.style.whiteSpace = 'pre-line';
+                
+                const colors = {
+                    info: '#3b82f6',
+                    success: '#10b981',
+                    error: '#ef4444',
+                    warning: '#f59e0b'
+                };
+                
+                statusElement.style.borderLeft = `4px solid ${colors[type] || colors.info}`;
+            }
+
+            async registerServiceWorker() {
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registration = await navigator.serviceWorker.register('service-worker.js');
+                        console.log('Service Worker registered successfully:', registration);
+                    } catch (error) {
+                        console.error('Service Worker registration failed:', error);
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new TrainingApp();
+        });
+
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('videoModal');
+            if (e.target === modal) {
+                document.getElementById('modalClose').click();
+            }
+        });
+    </script>
+</body>
+</html>
