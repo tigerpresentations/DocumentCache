@@ -318,8 +318,8 @@
         }
 
         .download-btn.cached {
-            background: var(--success);
-            color: white;
+            background: var(--success) !important;
+            color: white !important;
         }
 
         .download-btn.downloading {
@@ -556,8 +556,8 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'training-hub-v10';
-        const CONTENT_CACHE = 'content-cache-v10';
+        const CACHE_NAME = 'training-hub-v11';
+        const CONTENT_CACHE = 'content-cache-v11';
         
         const resources = {
             documents: [
@@ -777,7 +777,7 @@
                 
                 if (downloadBtn) {
                     if (isCached) {
-                        downloadBtn.textContent = '✅ Downloaded';
+                        downloadBtn.innerHTML = '✅ Downloaded';
                         downloadBtn.className = 'action-btn download-btn cached';
                         downloadBtn.disabled = false;
                     } else {
