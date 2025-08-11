@@ -72,29 +72,35 @@ self.addEventListener('fetch', (event) => {
   if (requestUrl.pathname.includes('/documents/') || requestUrl.pathname.includes('/videos/')) {
     event.respondWith(handleContentRequest(event.request));
   }
-  // Handle manifest.json specifically
+  // Handle manifest.json - serve from network first, then cache
   else if (requestUrl.pathname.endsWith('/manifest.json')) {
-    event.respondWith(handleStaticAssetRequest(event.request));
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const cache = caches.open(CACHE_NAME);
+            cache.then(c => c.put(event.request, response.clone()));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
   }
-  // Handle service worker file (don't cache this)
+  // Don't intercept service worker requests
   else if (requestUrl.pathname.endsWith('/service-worker.js')) {
-    return; // Let browser handle normally
+    return;
   }
-  // Handle specific static assets
-  else if (STATIC_ASSETS.some(asset => {
-    const assetPath = new URL(asset, location.origin).pathname;
-    return requestUrl.pathname === assetPath;
-  })) {
-    event.respondWith(handleStaticAssetRequest(event.request));
-  }
-  // Handle HTML pages and app navigation
-  else if (requestUrl.pathname.endsWith('.html') || 
+  // Handle main HTML page - always try network first for fresh content
+  else if (requestUrl.pathname.endsWith('index.html') || 
            requestUrl.pathname === BASE_PATH + '/' ||
            requestUrl.pathname === '/' ||
-           (!requestUrl.pathname.includes('.') && requestUrl.pathname.length > 1)) {
+           requestUrl.pathname === BASE_PATH) {
     event.respondWith(handleAppRequest(event.request));
   }
-  // Let other requests pass through normally
+  // Handle other static assets
+  else if (requestUrl.pathname.includes('/icons/')) {
+    event.respondWith(handleStaticAssetRequest(event.request));
+  }
 });
 
 async function handleContentRequest(request) {
@@ -190,49 +196,38 @@ async function handleAppRequest(request) {
   try {
     console.log('[ServiceWorker] Handling app request:', request.url);
     
-    // Always try to serve index.html for app requests
-    let cachedResponse = await cache.match(BASE_PATH + '/index.html');
-    
-    if (!cachedResponse) {
-      cachedResponse = await cache.match(BASE_PATH + '/');
+    // Try network first for fresh content
+    try {
+      const networkResponse = await fetch(request);
+      if (networkResponse.ok) {
+        console.log('[ServiceWorker] Serving fresh content from network');
+        // Cache the fresh response
+        const responseClone = networkResponse.clone();
+        await cache.put(request, responseClone);
+        return networkResponse;
+      }
+    } catch (networkError) {
+      console.log('[ServiceWorker] Network failed, trying cache:', networkError);
     }
     
-    if (!cachedResponse && BASE_PATH) {
-      // Fallback for root paths
-      cachedResponse = await cache.match('/index.html') || await cache.match('/');
+    // Fall back to cache
+    let cachedResponse = await cache.match(request);
+    
+    // Try different cache keys if direct match fails
+    if (!cachedResponse) {
+      cachedResponse = await cache.match(BASE_PATH + '/index.html') ||
+                      await cache.match(BASE_PATH + '/') ||
+                      await cache.match('/index.html') ||
+                      await cache.match('/');
     }
     
     if (cachedResponse) {
-      console.log('[ServiceWorker] Serving index.html from cache for:', request.url);
-      
-      // Background update of the actual requested URL if it's the main page
-      const requestUrl = new URL(request.url);
-      if (requestUrl.pathname === BASE_PATH + '/' || requestUrl.pathname === '/' || requestUrl.pathname.endsWith('.html')) {
-        fetch('/index.html').then(networkResponse => {
-          if (networkResponse.ok) {
-            cache.put(BASE_PATH + '/index.html', networkResponse.clone());
-            cache.put(BASE_PATH + '/', networkResponse.clone());
-          }
-        }).catch(() => {
-          console.log('[ServiceWorker] Background update failed, continuing with cached version');
-        });
-      }
-      
+      console.log('[ServiceWorker] Serving from cache');
       return cachedResponse;
     }
     
-    console.log('[ServiceWorker] App not in cache, fetching index.html from network');
-    // Always fetch index.html for app navigation
-    const networkResponse = await fetch('/index.html');
-    
-    if (networkResponse.ok) {
-      const responseClone = networkResponse.clone();
-      await cache.put(BASE_PATH + '/index.html', responseClone);
-      await cache.put(BASE_PATH + '/', responseClone.clone());
-      return networkResponse;
-    }
-    
-    throw new Error('Failed to fetch index.html');
+    console.log('[ServiceWorker] No cache found, creating offline page');
+    return createOfflineFallbackPage();
     
   } catch (error) {
     console.error('[ServiceWorker] App request failed:', error);
