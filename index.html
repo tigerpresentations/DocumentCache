@@ -555,8 +555,8 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'training-hub-v9';
-        const CONTENT_CACHE = 'content-cache-v9';
+        const CACHE_NAME = 'training-hub-v10';
+        const CONTENT_CACHE = 'content-cache-v10';
         
         const resources = {
             documents: [
@@ -848,7 +848,7 @@
 
             async downloadSingleResource(resourceId) {
                 if (!this.isOnline) {
-                    this.showStatus('Cannot download content while offline.', 'error');
+                    this.showErrorToast('Cannot download content while offline.');
                     return;
                 }
 
@@ -856,7 +856,7 @@
                 const resource = allResources.find(r => r.id === resourceId);
                 
                 if (!resource) {
-                    this.showStatus('Resource not found.', 'error');
+                    this.showErrorToast('Resource not found.');
                     return;
                 }
 
@@ -889,6 +889,7 @@
                     
                 } catch (error) {
                     console.error(`Error downloading ${resource.title}:`, error);
+                    this.showErrorToast(`Failed to download ${resource.title}: ${error.message}`);
                     this.showStatus(`Failed to download ${resource.title}: ${error.message}`, 'error');
                     
                     downloadBtn.textContent = '📥 Download';
@@ -899,7 +900,7 @@
 
             async downloadAllContent() {
                 if (!this.isOnline) {
-                    this.showStatus('Cannot download content while offline.', 'error');
+                    this.showErrorToast('Cannot download content while offline.');
                     return;
                 }
 
@@ -982,7 +983,7 @@
                     
                 } catch (error) {
                     console.error('Error checking cache status:', error);
-                    this.showStatus('Error checking cache status.', 'error');
+                    this.showErrorToast('Error checking cache status.');
                 }
             }
 
@@ -1029,7 +1030,7 @@
                         
                     } catch (error) {
                         console.error('Error clearing cache:', error);
-                        this.showStatus('Error clearing cache.', 'error');
+                        this.showErrorToast('Error clearing cache.');
                     }
                 }
             }
@@ -1120,43 +1121,51 @@
                 };
                 
                 statusElement.style.borderLeft = `4px solid ${colors[type] || colors.info}`;
-                
-                // Also show error toasts for error messages
-                if (type === 'error') {
-                    this.showErrorToast(message);
-                }
             }
 
             showErrorToast(message) {
                 // Remove existing error toast if any
                 const existingToast = document.getElementById('errorToast');
                 if (existingToast) {
-                    existingToast.remove();
+                    // Clear existing timeouts to prevent conflicts
+                    existingToast.classList.remove('show');
+                    setTimeout(() => {
+                        if (document.getElementById('errorToast') === existingToast) {
+                            existingToast.remove();
+                        }
+                    }, 300);
                 }
                 
-                // Create error toast
-                const toast = document.createElement('div');
-                toast.id = 'errorToast';
-                toast.className = 'error-toast';
-                toast.innerHTML = `
-                    ${message}
-                    <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
-                `;
-                
-                document.body.appendChild(toast);
-                
-                // Show toast with animation
+                // Wait a moment before creating new toast to prevent flicker
                 setTimeout(() => {
-                    toast.classList.add('show');
-                }, 100);
-                
-                // Auto-hide after 5 seconds
-                setTimeout(() => {
-                    if (toast.classList.contains('show')) {
-                        toast.classList.remove('show');
-                        setTimeout(() => toast.remove(), 300);
-                    }
-                }, 5000);
+                    // Create error toast
+                    const toast = document.createElement('div');
+                    toast.id = 'errorToast';
+                    toast.className = 'error-toast';
+                    toast.innerHTML = `
+                        ${message}
+                        <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+                    `;
+                    
+                    document.body.appendChild(toast);
+                    
+                    // Show toast with animation
+                    setTimeout(() => {
+                        toast.classList.add('show');
+                    }, 100);
+                    
+                    // Auto-hide after 8 seconds (increased from 5)
+                    setTimeout(() => {
+                        if (toast && toast.classList.contains('show')) {
+                            toast.classList.remove('show');
+                            setTimeout(() => {
+                                if (toast.parentNode) {
+                                    toast.remove();
+                                }
+                            }, 300);
+                        }
+                    }, 8000);
+                }, existingToast ? 350 : 0);
             }
 
             async registerServiceWorker() {

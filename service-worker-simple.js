@@ -1,5 +1,5 @@
-const CACHE_NAME = 'training-hub-v9';
-const CONTENT_CACHE = 'content-cache-v9';
+const CACHE_NAME = 'training-hub-v10';
+const CONTENT_CACHE = 'content-cache-v10';
 
 // Auto-detect base path for GitHub Pages subdirectory support
 const BASE_PATH = location.pathname.replace('/service-worker.js', '').replace('/service-worker-simple.js', '').replace(/\/$/, '') || '';
@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v9 - added error toast styling');
+  console.log('[ServiceWorker] Installing v10 - fixed error toast timing');
   self.skipWaiting(); // Force immediate activation
 });
 
