@@ -551,6 +551,18 @@
                 document.getElementById('searchInput').addEventListener('input', (e) => this.filterResources(e.target.value));
                 document.getElementById('modalClose').addEventListener('click', () => this.closeVideoModal());
                 
+                // Close error toasts when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('.error-toast') || e.target.closest('.toast-close')) {
+                        return;
+                    }
+                    const errorToast = document.getElementById('errorToast');
+                    if (errorToast && !errorToast.contains(e.target)) {
+                        errorToast.classList.remove('show');
+                        setTimeout(() => errorToast.remove(), 300);
+                    }
+                });
+                
                 window.addEventListener('online', () => {
                     this.isOnline = true;
                     this.updateConnectionStatus();
