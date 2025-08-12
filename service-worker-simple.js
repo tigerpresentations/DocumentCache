@@ -1,5 +1,5 @@
-const CACHE_NAME = 'training-hub-v13';
-const CONTENT_CACHE = 'content-cache-v13';
+const CACHE_NAME = 'training-hub-v14';
+const CONTENT_CACHE = 'content-cache-v14';
 
 // Auto-detect base path for GitHub Pages subdirectory support
 const BASE_PATH = location.pathname.replace('/service-worker.js', '').replace('/service-worker-simple.js', '').replace(/\/$/, '') || '';
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v13 - dynamic document loading from JSON');
+  console.log('[ServiceWorker] Installing v14 - fixed video playback for uncached videos');
   self.skipWaiting(); // Force immediate activation
 });
 
@@ -48,9 +48,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle content files (documents and videos) - cache first
-  if (requestUrl.pathname.includes('/documents/') || requestUrl.pathname.includes('/videos/')) {
+  // Handle documents - cache first
+  if (requestUrl.pathname.includes('/documents/')) {
     event.respondWith(handleContentRequest(event.request));
+  }
+  // Handle videos - try cache first, but let network failures pass through naturally
+  else if (requestUrl.pathname.includes('/videos/')) {
+    event.respondWith(handleVideoRequest(event.request));
   }
   // For everything else, use network first with cache fallback
   else {
@@ -117,6 +121,39 @@ async function handleContentRequest(request) {
         headers: { 'Content-Type': 'application/json' }
       }
     );
+  }
+}
+
+async function handleVideoRequest(request) {
+  try {
+    const cache = await caches.open(CONTENT_CACHE);
+    const cachedResponse = await cache.match(request);
+    
+    if (cachedResponse) {
+      console.log('[ServiceWorker] Serving video from cache:', request.url);
+      return cachedResponse;
+    }
+    
+    // For videos, try network and cache in background, but let network errors pass through
+    console.log('[ServiceWorker] Video not in cache, fetching from network:', request.url);
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      console.log('[ServiceWorker] Caching video from network:', request.url);
+      const responseClone = networkResponse.clone();
+      // Cache in background - don't wait
+      cache.put(request, responseClone).catch(err => 
+        console.log('[ServiceWorker] Background video caching failed:', err)
+      );
+    }
+    
+    return networkResponse;
+    
+  } catch (error) {
+    console.error('[ServiceWorker] Video request failed:', error);
+    // For videos, don't return JSON error - let the request fail naturally 
+    // so the video element can handle it properly
+    throw error;
   }
 }
 
