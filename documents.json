@@ -2,52 +2,49 @@
   "documents": [
     {
       "id": "doc1",
-      "title": "Quick Start Guide",
-      "description": "Essential setup instructions and basic configuration steps to get started quickly.",
-      "filename": "product-guide-1.pdf",
-      "size": "3.2 MB",
-      "url": "documents/product-guide-1.pdf"
+      "title": "TigerBrite 37x91 Setup Instructions",
+      "description": "Setup instructions for the TigerBrite 37x91 model, including Backlit, Backlit with Monitor, and Non-Backlit configurations, plus troubleshooting and accessories guide.",
+      "filename": "TigerBrite_37x91_Instruction.pdf",
+      "size": "5 MB",
+      "url": "documents/TigerBrite_37x91_Instruction.pdf"
     },
     {
       "id": "doc2",
-      "title": "Advanced Features Manual",
-      "description": "Comprehensive guide covering advanced functionality and expert-level configurations.",
-      "filename": "product-guide-2.pdf",
-      "size": "3.5 MB",
-      "url": "documents/product-guide-2.pdf"
+      "title": "TigerBrite 64x91 Setup Instructions",
+      "description": "Setup instructions for the TigerBrite 64x91 model, including Backlit, Backlit with Monitor, and Non-Backlit configurations, plus troubleshooting and accessories guide.",
+      "filename": "TigerBrite_64x91_Instruction.pdf",
+      "size": "5 MB",
+      "url": "documents/TigerBrite_64x91_Instruction.pdf"
+    },
+    {
+      "id": "doc3",
+      "title": "TigerBrite 91x91 Setup Instructions",
+      "description": "Setup instructions for the TigerBrite 91x91 model, including Backlit, Backlit with Monitor, and Non-Backlit configurations, plus troubleshooting and accessories guide.",
+      "filename": "TigerBrite_91x91_Instruction.pdf",
+      "size": "5 MB",
+      "url": "documents/TigerBrite_91x91_Instruction.pdf"
+    },{
+      "id": "doc4",
+      "title": "TigerBrite 117x91 Setup Instructions",
+      "description": "Setup instructions for the TigerBrite 117x91 model, including Backlit, Backlit with Monitor, and Non-Backlit configurations, plus troubleshooting and accessories guide.",
+      "filename": "TigerBrite_117x91_Instruction.pdf",
+      "size": "5 MB",
+      "url": "documents/TigerBrite_117x91_Instruction.pdf"
     }
   ],
   "videos": [
     {
       "id": "vid1",
-      "title": "Initial Setup Tutorial",
-      "description": "Step-by-step walkthrough of the complete installation and initial configuration process.",
-      "filename": "setup-tutorial.mp4",
-      "duration": "3:45",
-      "size": "25 MB",
-      "url": "videos/setup-tutorial.mp4"
-    },
-    {
-      "id": "vid2",
-      "title": "Common Issues & Solutions",
-      "description": "Troubleshooting guide for the most frequently encountered problems and their solutions.",
-      "filename": "troubleshooting.mp4",
-      "duration": "2:30",
-      "size": "18 MB",
-      "url": "videos/troubleshooting.mp4"
-    },
-    {
-      "id": "vid3",
-      "title": "Maintenance & Care",
-      "description": "Best practices for ongoing maintenance, updates, and system care procedures.",
-      "filename": "maintenance.mp4",
-      "duration": "2:15",
-      "size": "16 MB",
-      "url": "videos/maintenance.mp4"
+      "title": "TigerBrite Setup Instructions",
+      "description": "Step-by-step setup guide for any TigerBrite size.",
+      "filename": "TigerBrite_Setup_Instructions_540p.mp4",
+      "duration": "4:17",
+      "size": "12.8 MB",
+      "url": "videos/TigerBrite_Setup_Instructions_540p.mp4"
     }
   ],
   "metadata": {
-    "lastUpdated": "2025-01-12",
+    "lastUpdated": "2025-08-12",
     "version": "1.0"
   }
 }
