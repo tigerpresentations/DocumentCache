@@ -780,8 +780,8 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'training-hub-v15';
-        const CONTENT_CACHE = 'content-cache-v15';
+        const CACHE_NAME = 'training-hub-v16';
+        const CONTENT_CACHE = 'content-cache-v16';
         
         let resources = {
             documents: [],
@@ -1200,17 +1200,33 @@
                     
                     let totalSize = 0;
                     const allResources = [...resources.documents, ...resources.videos];
-                    const cachedResourceNames = [];
+                    const cachedResourceTitles = new Set(); // Use Set to prevent duplicates
+                    const debugInfo = {}; // Track cache entries per resource
                     
                     for (const request of cachedRequests) {
                         const response = await cache.match(request);
                         if (response) {
                             const resource = allResources.find(r => request.url.includes(r.filename));
                             if (resource) {
-                                cachedResourceNames.push(resource.title);
+                                cachedResourceTitles.add(resource.title); // Set automatically prevents duplicates
+                                
+                                // Debug info - track how many cache entries per resource
+                                if (!debugInfo[resource.title]) {
+                                    debugInfo[resource.title] = 0;
+                                }
+                                debugInfo[resource.title]++;
                             }
                         }
                     }
+                    
+                    // Log debug info if there are duplicates
+                    const duplicates = Object.entries(debugInfo).filter(([title, count]) => count > 1);
+                    if (duplicates.length > 0) {
+                        console.log('[Cache Debug] Resources with multiple cache entries:', duplicates);
+                    }
+                    
+                    // Convert Set to Array for display
+                    const cachedResourceNames = Array.from(cachedResourceTitles);
                     
                     const statusMessage = cachedResourceNames.length > 0 
                         ? `Cached Resources (${cachedResourceNames.length}/${allResources.length}):\n• ${cachedResourceNames.join('\n• ')}`
