@@ -1,5 +1,5 @@
-const CACHE_NAME = 'training-hub-v14';
-const CONTENT_CACHE = 'content-cache-v14';
+const CACHE_NAME = 'training-hub-v15';
+const CONTENT_CACHE = 'content-cache-v15';
 
 // Auto-detect base path for GitHub Pages subdirectory support
 const BASE_PATH = location.pathname.replace('/service-worker.js', '').replace('/service-worker-simple.js', '').replace(/\/$/, '') || '';
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v14 - fixed video playback for uncached videos');
+  console.log('[ServiceWorker] Installing v15 - added real-time UI updates for background caching');
   self.skipWaiting(); // Force immediate activation
 });
 
@@ -103,6 +103,17 @@ async function handleContentRequest(request) {
       console.log('[ServiceWorker] Caching content from network:', request.url);
       const responseClone = networkResponse.clone();
       await cache.put(request, responseClone);
+      
+      // Notify the main app that caching is complete
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'CONTENT_CACHED',
+            url: request.url,
+            contentType: 'document'
+          });
+        });
+      });
     }
     
     return networkResponse;
@@ -142,9 +153,23 @@ async function handleVideoRequest(request) {
       console.log('[ServiceWorker] Caching video from network:', request.url);
       const responseClone = networkResponse.clone();
       // Cache in background - don't wait
-      cache.put(request, responseClone).catch(err => 
-        console.log('[ServiceWorker] Background video caching failed:', err)
-      );
+      cache.put(request, responseClone)
+        .then(() => {
+          console.log('[ServiceWorker] Background video caching completed:', request.url);
+          // Notify the main app that caching is complete
+          self.clients.matchAll().then(clients => {
+            clients.forEach(client => {
+              client.postMessage({
+                type: 'CONTENT_CACHED',
+                url: request.url,
+                contentType: 'video'
+              });
+            });
+          });
+        })
+        .catch(err => 
+          console.log('[ServiceWorker] Background video caching failed:', err)
+        );
     }
     
     return networkResponse;

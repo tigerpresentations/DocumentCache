@@ -780,8 +780,8 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'training-hub-v14';
-        const CONTENT_CACHE = 'content-cache-v14';
+        const CACHE_NAME = 'training-hub-v15';
+        const CONTENT_CACHE = 'content-cache-v15';
         
         let resources = {
             documents: [],
@@ -805,6 +805,7 @@
                 await this.checkCacheStatus();
                 this.registerServiceWorker();
                 this.setupInstallPrompt();
+                this.setupServiceWorkerMessages();
             }
 
             async loadResources() {
@@ -1430,6 +1431,40 @@
                     } catch (error) {
                         console.error('Service Worker registration failed:', error);
                     }
+                }
+            }
+
+            // Service Worker Message Handling
+            setupServiceWorkerMessages() {
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.addEventListener('message', (event) => {
+                        if (event.data && event.data.type === 'CONTENT_CACHED') {
+                            this.handleContentCached(event.data.url, event.data.contentType);
+                        }
+                    });
+                }
+            }
+
+            handleContentCached(url, contentType) {
+                console.log(`[App] Content cached: ${url} (${contentType})`);
+                
+                // Find the resource by URL
+                const allResources = [...resources.documents, ...resources.videos];
+                const resource = allResources.find(r => url.includes(r.filename));
+                
+                if (resource) {
+                    // Add to cached resources set
+                    this.cachedResources.add(resource.id);
+                    
+                    // Update UI immediately
+                    this.updateResourceStatus(resource.id, true);
+                    
+                    // Show a subtle notification
+                    this.showStatus(`${resource.title} cached successfully for offline access!`, 'success');
+                    
+                    console.log(`[App] Updated UI for cached ${contentType}: ${resource.title}`);
+                } else {
+                    console.warn(`[App] Could not find resource for URL: ${url}`);
                 }
             }
 
