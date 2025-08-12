@@ -1,0 +1,53 @@
+{
+  "documents": [
+    {
+      "id": "doc1",
+      "title": "Quick Start Guide",
+      "description": "Essential setup instructions and basic configuration steps to get started quickly.",
+      "filename": "product-guide-1.pdf",
+      "size": "3.2 MB",
+      "url": "documents/product-guide-1.pdf"
+    },
+    {
+      "id": "doc2",
+      "title": "Advanced Features Manual",
+      "description": "Comprehensive guide covering advanced functionality and expert-level configurations.",
+      "filename": "product-guide-2.pdf",
+      "size": "3.5 MB",
+      "url": "documents/product-guide-2.pdf"
+    }
+  ],
+  "videos": [
+    {
+      "id": "vid1",
+      "title": "Initial Setup Tutorial",
+      "description": "Step-by-step walkthrough of the complete installation and initial configuration process.",
+      "filename": "setup-tutorial.mp4",
+      "duration": "3:45",
+      "size": "25 MB",
+      "url": "videos/setup-tutorial.mp4"
+    },
+    {
+      "id": "vid2",
+      "title": "Common Issues & Solutions",
+      "description": "Troubleshooting guide for the most frequently encountered problems and their solutions.",
+      "filename": "troubleshooting.mp4",
+      "duration": "2:30",
+      "size": "18 MB",
+      "url": "videos/troubleshooting.mp4"
+    },
+    {
+      "id": "vid3",
+      "title": "Maintenance & Care",
+      "description": "Best practices for ongoing maintenance, updates, and system care procedures.",
+      "filename": "maintenance.mp4",
+      "duration": "2:15",
+      "size": "16 MB",
+      "url": "videos/maintenance.mp4"
+    }
+  ],
+  "metadata": {
+    "lastUpdated": "2025-01-12",
+    "version": "1.0"
+  }
+}
