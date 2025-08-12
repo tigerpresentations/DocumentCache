@@ -1,5 +1,5 @@
-const CACHE_NAME = 'training-hub-v18';
-const CONTENT_CACHE = 'content-cache-v18';
+const CACHE_NAME = 'training-hub-v22';
+const CONTENT_CACHE = 'content-cache-v22';
 
 // Auto-detect base path for GitHub Pages subdirectory support
 const BASE_PATH = location.pathname.replace('/service-worker.js', '').replace('/service-worker-simple.js', '').replace(/\/$/, '') || '';
@@ -14,7 +14,7 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v18 - added version tracker and last refreshed footer');
+  console.log('[ServiceWorker] Installing v22 - added mobile Safari storage limit warnings');
   self.skipWaiting(); // Force immediate activation
 });
 

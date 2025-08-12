@@ -744,13 +744,10 @@
                     📥 Download All Content
                 </button>
                 <button class="control-button btn-secondary" id="checkStatusBtn">
-                    📊 Check Cache Status
+                    📊 Check Download Status
                 </button>
-                <button class="control-button btn-secondary" id="forceRefreshBtn">
-                    🔄 Force Refresh
-                </button>
-                <button class="control-button btn-danger" id="clearCacheBtn">
-                    🗑️ Clear Cache
+                <button class="control-button btn-danger" id="clearAndRefreshBtn">
+                    🗑️ Clear Downloads & Refresh
                 </button>
             </div>
             <div class="progress-bar" id="downloadProgress" style="display: none;">
@@ -783,7 +780,7 @@
                 <span class="version-label">Version:</span>
                 <span class="version-number" id="appVersion">v1.0</span>
                 <span class="separator">•</span>
-                <span class="cache-version" id="cacheVersion">Cache: v18</span>
+                <span class="cache-version" id="cacheVersion">Cache: v22</span>
             </div>
             <div class="refresh-info">
                 <span class="refresh-label">Last Updated:</span>
@@ -859,8 +856,8 @@
     </div>
 
     <script>
-        const CACHE_NAME = 'training-hub-v18';
-        const CONTENT_CACHE = 'content-cache-v18';
+        const CACHE_NAME = 'training-hub-v22';
+        const CONTENT_CACHE = 'content-cache-v22';
         
         let resources = {
             documents: [],
@@ -940,8 +937,7 @@
             bindEvents() {
                 document.getElementById('downloadAllBtn').addEventListener('click', () => this.downloadAllContent());
                 document.getElementById('checkStatusBtn').addEventListener('click', () => this.displayCacheStatus());
-                document.getElementById('forceRefreshBtn').addEventListener('click', () => this.forceRefresh());
-                document.getElementById('clearCacheBtn').addEventListener('click', () => this.clearCache());
+                document.getElementById('clearAndRefreshBtn').addEventListener('click', () => this.clearDownloadsAndRefresh());
                 document.getElementById('searchInput').addEventListener('input', (e) => this.filterResources(e.target.value));
                 document.getElementById('modalClose').addEventListener('click', () => this.closeVideoModal());
                 
@@ -1209,8 +1205,15 @@
                     
                 } catch (error) {
                     console.error(`Error downloading ${resource.title}:`, error);
-                    this.showErrorToast(`Failed to download ${resource.title}: ${error.message}`);
-                    this.showStatus(`Failed to download ${resource.title}: ${error.message}`, 'error');
+                    
+                    // Check for quota exceeded error
+                    if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
+                        this.showErrorToast(`Storage full! Cannot download ${resource.title}. Try clearing downloads or freeing up device storage.`);
+                        this.showStatus(`Storage quota exceeded for ${resource.title}`, 'error');
+                    } else {
+                        this.showErrorToast(`Failed to download ${resource.title}: ${error.message}`);
+                        this.showStatus(`Failed to download ${resource.title}: ${error.message}`, 'error');
+                    }
                     
                     downloadBtn.textContent = '📥 Download';
                     downloadBtn.className = 'action-btn download-btn';
@@ -1221,6 +1224,26 @@
             async downloadAllContent() {
                 if (!this.isOnline) {
                     this.showErrorToast('Cannot download content while offline.');
+                    return;
+                }
+
+                // Check storage quota before starting downloads
+                const quotaCheck = await this.checkStorageQuota();
+                
+                // Show Mobile Safari warning if applicable
+                if (quotaCheck.warning) {
+                    this.showErrorToast(quotaCheck.warning);
+                    if (!confirm('Continue with download despite storage limitations?')) {
+                        return;
+                    }
+                }
+                
+                if (!quotaCheck.canDownload) {
+                    let errorMsg = `Insufficient storage space. Need ${quotaCheck.estimatedSize} but only ${quotaCheck.availableSpace} available.`;
+                    if (quotaCheck.isMobileSafari) {
+                        errorMsg += ` Mobile Safari typically limits storage to ~50MB.`;
+                    }
+                    this.showErrorToast(errorMsg);
                     return;
                 }
 
@@ -1258,7 +1281,15 @@
                             
                         } catch (error) {
                             console.error(`Error downloading ${resource.title}:`, error);
-                            this.showStatus(`Failed to download ${resource.title}`, 'error');
+                            
+                            // Check for quota exceeded error
+                            if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
+                                this.showErrorToast(`Storage full! Cannot download ${resource.title}. Try clearing some space.`);
+                                this.showStatus(`Download stopped: Storage quota exceeded at ${resource.title}`, 'error');
+                                break; // Stop downloading more files
+                            } else {
+                                this.showStatus(`Failed to download ${resource.title}: ${error.message}`, 'error');
+                            }
                         }
                     }
                     
@@ -1317,18 +1348,14 @@
                         }
                     }
                     
-                    // Get storage estimate if available
+                    // Show downloaded files size and mobile warnings
                     let storageInfo = '';
-                    if ('storage' in navigator && 'estimate' in navigator.storage) {
-                        try {
-                            const estimate = await navigator.storage.estimate();
-                            const usedMB = Math.round((estimate.usage || 0) / (1024 * 1024) * 10) / 10;
-                            const quotaMB = Math.round((estimate.quota || 0) / (1024 * 1024));
-                            const usagePercent = estimate.quota ? Math.round((estimate.usage / estimate.quota) * 100) : 0;
-                            
-                            storageInfo = `\n\n📊 Storage Usage:\n• PWA Total: ${usedMB} MB of ${quotaMB} MB (${usagePercent}%)\n• Cache Estimated: ${this.formatBytes(totalCacheSize)}`;
-                        } catch (e) {
-                            console.log('[Storage] Could not get storage estimate:', e);
+                    if (totalCacheSize > 0) {
+                        storageInfo = `\n\n📊 Storage Usage:\n• Downloaded Files: ${this.formatBytes(totalCacheSize)}`;
+                        
+                        // Add Mobile Safari warning if significant storage used
+                        if (this.isMobileSafari() && totalCacheSize > 30 * 1024 * 1024) {
+                            storageInfo += `\n⚠️ Mobile Safari Warning: You're using ${this.formatBytes(totalCacheSize)} of ~50MB limit.`;
                         }
                     }
                     
@@ -1355,9 +1382,11 @@
                 }
             }
 
-            async forceRefresh() {
-                if (confirm('This will clear all caches and force refresh the app to get the latest version. Continue?')) {
+            async clearDownloadsAndRefresh() {
+                if (confirm('This will clear all downloaded content and refresh the app to get the latest version. Continue?')) {
                     try {
+                        this.showStatus('Clearing downloads and refreshing app...', 'info');
+                        
                         // Clear all caches
                         const cacheNames = await caches.keys();
                         await Promise.all(
@@ -1372,33 +1401,17 @@
                             }
                         }
                         
-                        // Force hard reload
+                        // Clear cached resources from memory
+                        this.cachedResources.clear();
+                        
+                        // Force hard reload to get fresh version
                         window.location.reload(true);
                         
                     } catch (error) {
-                        console.error('Error during force refresh:', error);
+                        console.error('Error during clear and refresh:', error);
+                        this.showErrorToast('Error clearing downloads. Refreshing anyway...');
                         // Fallback: just reload normally
-                        window.location.reload();
-                    }
-                }
-            }
-
-            async clearCache() {
-                if (confirm('This will remove all cached content. Are you sure?')) {
-                    try {
-                        await caches.delete(CONTENT_CACHE);
-                        this.cachedResources.clear();
-                        
-                        const allResources = [...resources.documents, ...resources.videos];
-                        allResources.forEach(resource => {
-                            this.updateResourceStatus(resource.id, false);
-                        });
-                        
-                        this.showStatus('Cache cleared successfully.', 'success');
-                        
-                    } catch (error) {
-                        console.error('Error clearing cache:', error);
-                        this.showErrorToast('Error clearing cache.');
+                        setTimeout(() => window.location.reload(), 1000);
                     }
                 }
             }
@@ -1574,6 +1587,107 @@
                 const i = Math.floor(Math.log(bytes) / Math.log(k));
                 
                 return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+            }
+
+            async checkStorageQuota() {
+                try {
+                    // Calculate estimated size of all uncached resources
+                    const allResources = [...resources.documents, ...resources.videos];
+                    const uncachedResources = allResources.filter(r => !this.cachedResources.has(r.id));
+                    
+                    // Estimate total size needed (parse size strings like "3.2 MB")
+                    let estimatedBytes = 0;
+                    for (const resource of uncachedResources) {
+                        const sizeStr = resource.size || '1 MB';
+                        const sizeMatch = sizeStr.match(/(\d+\.?\d*)\s*(MB|GB|KB|Bytes?)/i);
+                        if (sizeMatch) {
+                            const value = parseFloat(sizeMatch[1]);
+                            const unit = sizeMatch[2].toUpperCase();
+                            let multiplier = 1;
+                            if (unit.startsWith('KB')) multiplier = 1024;
+                            else if (unit.startsWith('MB')) multiplier = 1024 * 1024;
+                            else if (unit.startsWith('GB')) multiplier = 1024 * 1024 * 1024;
+                            estimatedBytes += value * multiplier;
+                        }
+                    }
+
+                    // Detect mobile Safari and its strict limits
+                    const isMobileSafari = this.isMobileSafari();
+                    const mobileSafariLimit = 50 * 1024 * 1024; // 50MB typical limit
+                    
+                    // Check storage quota if available
+                    if ('storage' in navigator && 'estimate' in navigator.storage) {
+                        const estimate = await navigator.storage.estimate();
+                        let available = (estimate.quota || 0) - (estimate.usage || 0);
+                        let totalQuota = estimate.quota || 0;
+                        let safetyBuffer = 10 * 1024 * 1024; // 10MB safety buffer
+                        
+                        // Apply Mobile Safari restrictions
+                        if (isMobileSafari) {
+                            // Safari often reports higher quota but enforces lower limits
+                            const conservativeQuota = Math.min(totalQuota, mobileSafariLimit);
+                            available = Math.min(available, conservativeQuota - (estimate.usage || 0));
+                            safetyBuffer = 5 * 1024 * 1024; // Smaller buffer for mobile
+                            
+                            console.log(`[Storage] Mobile Safari detected. Using conservative quota: ${this.formatBytes(conservativeQuota)}`);
+                        }
+                        
+                        return {
+                            canDownload: available > (estimatedBytes + safetyBuffer),
+                            estimatedSize: this.formatBytes(estimatedBytes),
+                            availableSpace: this.formatBytes(available),
+                            totalQuota: this.formatBytes(totalQuota),
+                            currentUsage: this.formatBytes(estimate.usage || 0),
+                            isMobileSafari: isMobileSafari,
+                            warning: isMobileSafari && estimatedBytes > mobileSafariLimit ? 
+                                'Mobile Safari has strict storage limits (~50MB). Consider downloading files individually.' : null
+                        };
+                    }
+
+                    // Mobile Safari fallback without Storage API
+                    if (isMobileSafari) {
+                        return {
+                            canDownload: estimatedBytes < mobileSafariLimit,
+                            estimatedSize: this.formatBytes(estimatedBytes),
+                            availableSpace: this.formatBytes(mobileSafariLimit),
+                            totalQuota: this.formatBytes(mobileSafariLimit),
+                            currentUsage: 'Unknown',
+                            isMobileSafari: true,
+                            warning: 'Mobile Safari limits storage to ~50MB. Large downloads may fail.'
+                        };
+                    }
+
+                    // Fallback: assume we can download (browser will handle quota)
+                    return {
+                        canDownload: true,
+                        estimatedSize: this.formatBytes(estimatedBytes),
+                        availableSpace: 'Unknown',
+                        totalQuota: 'Unknown',
+                        currentUsage: 'Unknown',
+                        isMobileSafari: false,
+                        warning: null
+                    };
+
+                } catch (error) {
+                    console.error('Error checking storage quota:', error);
+                    return {
+                        canDownload: true, // Assume we can try
+                        estimatedSize: 'Unknown',
+                        availableSpace: 'Unknown',
+                        totalQuota: 'Unknown',
+                        currentUsage: 'Unknown',
+                        isMobileSafari: false,
+                        warning: null
+                    };
+                }
+            }
+
+            isMobileSafari() {
+                // Detect Mobile Safari (iOS Safari)
+                const userAgent = navigator.userAgent;
+                const isMobile = /iPhone|iPad|iPod/.test(userAgent);
+                const isSafari = /Safari/.test(userAgent) && !/CriOS|Chrome|Firefox/.test(userAgent);
+                return isMobile && isSafari;
             }
 
             updateFooterInfo() {
